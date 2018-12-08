@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import { Text, View, StyleSheet } from 'react-native'
+import { Component } from 'react'
+import { View, StyleSheet } from 'react-native'
 import { Constants, MapView, Location, Permissions } from 'expo'
 
 const BASE_URL = 'https://mobtracer.herokuapp.com'
@@ -13,12 +13,17 @@ export default class App extends Component {
       longitudeDelta: 0.0421,
     },
     locationResult: null,
-    location: { coords: { latitude: 37.78825, longitude: -122.4324 } },
+    location: {
+      coords: {
+        latitude: 37.78825,
+        longitude: -122.4324,
+      },
+    },
     markers: [],
   }
 
   componentDidMount() {
-    this._getLocationAsync()
+    this.getLocationAsync()
     this.setTimer()
   }
 
@@ -28,49 +33,30 @@ export default class App extends Component {
   }
 
   fetchLocations = async () => {
-    console.log('fetching locations...')
-
     const response = await fetch(`${BASE_URL}/locations`)
     const data = await response.json()
 
     const dates = Object.keys(data).sort().reverse()
 
     const locations = [...data[dates[0]], ...data[dates[1]], ...data[dates[2]]]
-    const locationsFiltered = []
+    const markers = []
 
     for (const location of locations) {
-      if (!locationsFiltered.find(({ user }) => user == location.user)) {
-        locationsFiltered.push(location)
+      if (!markers.find(({ user }) => user == location.user)) {
+        markers.push(location)
       }
     }
 
-    console.log(locationsFiltered)
-
-    // console.log([...data[dates[0]], ...data[dates[1]]])
-
-    // const locations = []
-
-    // for (const key of [dates[0], dates[1]]) {
-    //   if (Math.abs(new Date(Date.now()) - new Date(key)) <= 15000) {
-    //     for (const loc of data[dates[0]]) {
-    //       if (!locations.find(location => location.user === loc.user)) {
-    //         locations.push(loc)
-    //       }
-    //     }
-    //   }
-    // }
-
-    this.setState({
-      markers: locationsFiltered,
-    })
+    this.setState({ markers })
   }
 
   onRegionChange = mapRegion => {
     this.setState({ mapRegion })
   }
 
-  _getLocationAsync = async () => {
-    let { status } = await Permissions.askAsync(Permissions.LOCATION)
+  getLocationAsync = async () => {
+    const { status } = await Permissions.askAsync(Permissions.LOCATION)
+
     if (status !== 'granted') {
       this.setState({
         locationResult: 'Permission to access location was denied',
@@ -78,7 +64,8 @@ export default class App extends Component {
       })
     }
 
-    let location = await Location.getCurrentPositionAsync({})
+    const location = await Location.getCurrentPositionAsync({})
+
     this.setState({ locationResult: JSON.stringify(location), location })
   }
 
