@@ -7,6 +7,7 @@ const BASE_URL = 'https://mobtracer.herokuapp.com'
 
 export default class App extends Component {
   state = {
+    viewsHistory: false,
     user: null,
     mapRegion: {
       latitude: 37.78825,
@@ -54,7 +55,9 @@ export default class App extends Component {
 
   setTimer = () => {
     setInterval(() => {
-      this.fetchLocations()
+      if (!this.state.viewsHistory) {
+        this.fetchLocations()
+      }
       // this.postLocationAsync()
     }, 5000)
   }
@@ -111,13 +114,25 @@ export default class App extends Component {
   }
 
   markerClickHandler = async ({ user }) => {
-    const response = await fetch(`${BASE_URL}/locations/dczajkowski`) // @todo user
+    this.setState({ viewsHistory: true })
+
+    const response = await fetch(`${BASE_URL}/locations/${user}`)
     const data = await response.json()
 
     this.setState({ markers: Object.entries(data).map(([key, value]) => value[0]) })
   }
 
   render() {
+    let mapContents = null
+
+    if (this.state.viewsHistory) {
+      mapContents = (
+        <MapView.Polyline
+          coordinates={this.state.markers}
+        />
+      )
+    }
+
     return (
       <View style={styles.container}>
         <MapView
@@ -125,6 +140,7 @@ export default class App extends Component {
           region={this.mapRegion}
           onRegionChange={this.onRegionChange}
         >
+          {mapContents}
           {this.state.markers.map(marker => (
             <MapView.Marker
               key={marker.id}
@@ -134,23 +150,6 @@ export default class App extends Component {
               onPress={this.markerClickHandler.bind(this, marker)}
             />
           ))}
-          <MapView.Marker
-            key={-1}
-            coordinate={{
-              id: -1,
-              user: 'dczajkowski',
-              latitude: 50.0880968,
-              longitude: 19.910226,
-            }}
-            title="dczajkowski"
-            description="Seen 2 seconds ago"
-            onPress={this.markerClickHandler.bind(this, {
-              id: -1,
-              user: 'dczajkowski',
-              latitude: 50.0880968,
-              longitude: 19.910226,
-            })}
-          />
         </MapView>
       </View>
     )
