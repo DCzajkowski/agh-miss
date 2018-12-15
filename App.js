@@ -1,18 +1,19 @@
 import React, { Component } from 'react'
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native' // AsyncStorage
 import { Constants, MapView, Location, Permissions } from 'expo'
+// import _ from 'lodash'
 
 const BASE_URL = 'https://mobtracer.herokuapp.com'
 
 export default class App extends Component {
   state = {
+    user: null,
     mapRegion: {
       latitude: 37.78825,
       longitude: -122.4324,
       latitudeDelta: 0.0922,
       longitudeDelta: 0.0421,
     },
-    locationResult: null,
     location: {
       coords: {
         latitude: 37.78825,
@@ -22,14 +23,59 @@ export default class App extends Component {
     markers: [],
   }
 
-  componentDidMount() {
-    this.getLocationAsync()
+  async componentDidMount() {
+    // await this.setUser()
+    this.setState({ user: Math.random() })
+    this.setLocationAsync()
     this.setTimer()
+    this.fetchLocations()
   }
 
+  // setUser = async () => {
+  //   let user
+
+  //   try {
+  //     user = await AsyncStorage.getItem('user');
+
+  //     if (user !== null) {
+  //       this.setState({ user })
+  //       return
+  //     }
+  //   } catch (error) {}
+
+  //   user = String(Math.random())
+
+  //   try {
+  //     await AsyncStorage.setItem('user', user);
+  //   } catch (error) {}
+
+  //   this.setState({ user })
+  // }
+
   setTimer = () => {
-    setInterval(() => this.fetchLocations(), 5000)
-    this.fetchLocations()
+    setInterval(() => {
+      this.fetchLocations()
+      // this.postLocationAsync()
+    }, 5000)
+  }
+
+  postLocationAsync = () => {
+    const { user, location: { coords: { latitude, longitude } } } = this.state
+
+    fetch(`${BASE_URL}/locations`, {
+      method: 'post',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ user, latitude, longitude }),
+    })
+  }
+
+  setLocationAsync = async () => {
+    const location = await this.getLocationAsync()
+
+    this.setState({ location })
   }
 
   fetchLocations = async () => {
@@ -58,15 +104,17 @@ export default class App extends Component {
     const { status } = await Permissions.askAsync(Permissions.LOCATION)
 
     if (status !== 'granted') {
-      this.setState({
-        locationResult: 'Permission to access location was denied',
-        location,
-      })
+      return // @todo
     }
 
-    const location = await Location.getCurrentPositionAsync({})
+    return await Location.getCurrentPositionAsync({})
+  }
 
-    this.setState({ locationResult: JSON.stringify(location), location })
+  markerClickHandler = async ({ user }) => {
+    const response = await fetch(`${BASE_URL}/locations/dczajkowski`) // @todo user
+    const data = await response.json()
+
+    this.setState({ markers: Object.entries(data).map(([key, value]) => value[0]) })
   }
 
   render() {
@@ -83,8 +131,26 @@ export default class App extends Component {
               coordinate={marker}
               title="My Marker"
               description="Some description"
+              onPress={this.markerClickHandler.bind(this, marker)}
             />
           ))}
+          <MapView.Marker
+            key={-1}
+            coordinate={{
+              id: -1,
+              user: 'dczajkowski',
+              latitude: 50.0880968,
+              longitude: 19.910226,
+            }}
+            title="dczajkowski"
+            description="Seen 2 seconds ago"
+            onPress={this.markerClickHandler.bind(this, {
+              id: -1,
+              user: 'dczajkowski',
+              latitude: 50.0880968,
+              longitude: 19.910226,
+            })}
+          />
         </MapView>
       </View>
     )
