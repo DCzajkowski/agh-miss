@@ -151,7 +151,7 @@ export default class App extends Component {
 
   mapClickHandler = () => {
     if (this.state.viewsHistory) {
-      this.setState({ viewsHistory: false })
+      this.setState({ viewsHistory: false, markers: [] })
       this.fetchLocations()
     }
   }
@@ -168,6 +168,7 @@ export default class App extends Component {
 
       mapContents = this.state.markers.map(list => (
         <MapView.Polyline
+          key={`poly-${list[0].id}`}
           coordinates={list}
         />
       ))
