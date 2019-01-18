@@ -91,8 +91,10 @@ export default class App extends Component {
     }, 5000)
   }
 
-  postLocationAsync = () => {
+  postLocationAsync = async () => {
     const { user, location: { coords: { latitude, longitude } } } = this.state
+
+    await this.setLocationAsync()
 
     fetch(`${BASE_URL}/locations`, {
       method: 'post',
